@@ -1,8 +1,5 @@
-# test_board_utils.py
-
-import pytest
-
-from board import Board
+import init
+from game.board import Board
 from constants import P1, P2, E0
 
 

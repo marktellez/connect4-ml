@@ -1,20 +1,20 @@
-import unittest
-from game import Game
+import init
+from game.game import Game
 from constants import P1, P2, E0
 
 
-class TestGame(unittest.TestCase):
-    def setUp(self):
+class TestGame:
+    def setup_method(self):
         self.game = Game([P1, P2])
 
     def test_board_initialization(self):
         game = Game([P1, P2])
         expected_rows = 6
         expected_columns = 7
-        self.assertEqual(len(game.board), expected_rows)
+        assert len(game.board) == expected_rows
         for row in game.board:
-            self.assertEqual(len(row), expected_columns)
-            self.assertTrue(all(cell == E0 for cell in row))
+            assert len(row) == expected_columns
+            assert all(cell == E0 for cell in row)
 
     def test_drop_piece_empty_column(self):
         self.game.board = [
@@ -26,8 +26,8 @@ class TestGame(unittest.TestCase):
             [E0, E0, E0, E0, E0, E0, E0],
         ]
         column = 0
-        self.assertTrue(self.game.drop_piece(column, P1))
-        self.assertEqual(self.game.board[5][column], P1)
+        assert self.game.drop_piece(column, P1)
+        assert self.game.board[5][column] == P1
 
     def test_drop_piece_partially_filled_column(self):
         self.game.board = [
@@ -39,8 +39,8 @@ class TestGame(unittest.TestCase):
             [E0, P1, E0, E0, E0, E0, E0],
         ]
         column = 1
-        self.assertTrue(self.game.drop_piece(column, P2))
-        self.assertEqual(self.game.board[4][column], P2)
+        assert self.game.drop_piece(column, P2)
+        assert self.game.board[4][column] == P2
 
     def test_drop_piece_full_column(self):
         self.game.board = [
@@ -52,7 +52,7 @@ class TestGame(unittest.TestCase):
             [P2, E0, E0, E0, E0, E0, E0],
         ]
         column = 0
-        self.assertFalse(self.game.drop_piece(column, P1))
+        assert not self.game.drop_piece(column, P1)
 
     def test_board_state_after_dropping_piece(self):
         self.game.board = [
@@ -65,7 +65,7 @@ class TestGame(unittest.TestCase):
         ]
         column = 3
         self.game.drop_piece(column, P1)
-        self.assertEqual(self.game.board[5][column], P1)
+        assert self.game.board[5][column] == P1
 
     def test_move_history_after_dropping_piece(self):
         self.game.board = [
@@ -79,7 +79,7 @@ class TestGame(unittest.TestCase):
         column = 4
         self.game.drop_piece(column, P2)
         last_move = self.game.move_history[-1]
-        self.assertEqual(last_move, (P2, 5, column))
+        assert last_move == (P2, 5, column)
 
     def test_draw_board(self):
         self.game.board = [
@@ -90,7 +90,7 @@ class TestGame(unittest.TestCase):
             [P2, P1, P2, P2, P2, P1, P1],
             [P1, P2, P1, P1, P2, P1, P2],
         ]
-        self.assertEqual(self.game.is_draw(), True, "No winner - draw board.")
+        assert self.game.is_draw(), "No winner - draw board."
 
     def test_horizontal_winner_1(self):
         self.game.board = [
@@ -101,11 +101,9 @@ class TestGame(unittest.TestCase):
             [E0, E0, E0, E0, E0, E0, E0],
             [P1, P1, P1, P1, E0, E0, E0],
         ]
-        self.assertEqual(
-            self.game.get_winner(),
-            P1,
-            "Player 1 should be the winner horizontally.",
-        )
+        assert (
+            self.game.get_winner() == P1
+        ), "Player 1 should be the winner horizontally."
 
     def test_horizontal_winner_2(self):
         self.game.board = [
@@ -116,11 +114,9 @@ class TestGame(unittest.TestCase):
             [E0, P1, P1, P1, P1, E0, E0],
             [P1, P1, P1, P2, P2, E0, E0],
         ]
-        self.assertEqual(
-            self.game.get_winner(),
-            P1,
-            "Player 1 should be the winner horizontally.",
-        )
+        assert (
+            self.game.get_winner() == P1
+        ), "Player 1 should be the winner horizontally."
 
     def test_horizontal_winner_3(self):
         self.game.board = [
@@ -131,11 +127,9 @@ class TestGame(unittest.TestCase):
             [P2, P1, P1, P2, P1, E0, E0],
             [P1, P1, P1, P2, P2, E0, E0],
         ]
-        self.assertEqual(
-            self.game.get_winner(),
-            P1,
-            "Player 1 should be the winner horizontally.",
-        )
+        assert (
+            self.game.get_winner() == P1
+        ), "Player 1 should be the winner horizontally."
 
     def test_no_horizontal_winner(self):
         self.game.board = [
@@ -146,7 +140,7 @@ class TestGame(unittest.TestCase):
             [P2, P1, P1, P2, P1, E0, E0],
             [P1, P1, P1, P2, P2, E0, E0],
         ]
-        self.assertEqual(self.game.get_winner(), None, "No winner horizontally.")
+        assert self.game.get_winner() is None, "No winner horizontally."
 
     def test_vertical_winner_1(self):
         self.game.board = [
@@ -157,11 +151,7 @@ class TestGame(unittest.TestCase):
             [P1, E0, E0, E0, E0, E0, E0],
             [P1, E0, E0, E0, E0, E0, E0],
         ]
-        self.assertEqual(
-            self.game.get_winner(),
-            P1,
-            "Player 1 should be the winner vertically.",
-        )
+        assert self.game.get_winner() == P1, "Player 1 should be the winner vertically."
 
     def test_vertical_winner_2(self):
         self.game.board = [
@@ -172,11 +162,7 @@ class TestGame(unittest.TestCase):
             [P1, E0, P1, E0, E0, E0, E0],
             [P1, E0, P2, E0, E0, E0, E0],
         ]
-        self.assertEqual(
-            self.game.get_winner(),
-            P1,
-            "Player 1 should be the winner vertically.",
-        )
+        assert self.game.get_winner() == P1, "Player 1 should be the winner vertically."
 
     def test_vertical_winner_3(self):
         self.game.board = [
@@ -187,11 +173,7 @@ class TestGame(unittest.TestCase):
             [P1, E0, P1, P2, E0, E0, E0],
             [P1, E0, P2, P2, E0, E0, E0],
         ]
-        self.assertEqual(
-            self.game.get_winner(),
-            P1,
-            "Player 1 should be the winner vertically.",
-        )
+        assert self.game.get_winner() == P1, "Player 1 should be the winner vertically."
 
     def test_no_vertical_winner(self):
         self.game.board = [
@@ -202,7 +184,7 @@ class TestGame(unittest.TestCase):
             [P1, E0, P1, P2, E0, E0, E0],
             [P1, E0, P2, P2, E0, E0, E0],
         ]
-        self.assertEqual(self.game.get_winner(), None, "No winner vertically.")
+        assert self.game.get_winner() is None, "No winner vertically."
 
     def test_diagonal_winner_1(self):
         self.game.board = [
@@ -213,11 +195,9 @@ class TestGame(unittest.TestCase):
             [P2, P2, P1, P2, E0, E0, E0],
             [P1, P1, P2, P2, E0, E0, E0],
         ]
-        self.assertEqual(
-            self.game.get_winner(),
-            P2,
-            "Player 1 should be the winner diagonally right.",
-        )
+        assert (
+            self.game.get_winner() == P2
+        ), "Player 2 should be the winner diagonally right."
 
     def test_no_diagonal_winner_r(self):
         self.game.board = [
@@ -228,7 +208,7 @@ class TestGame(unittest.TestCase):
             [P2, P2, P1, P2, E0, E0, E0],
             [P1, P1, P2, P2, E0, E0, E0],
         ]
-        self.assertEqual(self.game.get_winner(), None, "No winner diagonally right.")
+        assert self.game.get_winner() is None, "No winner diagonally right."
 
     def test_diagonal_winner_2(self):
         self.game.board = [
@@ -239,11 +219,9 @@ class TestGame(unittest.TestCase):
             [P2, P2, P1, P2, P1, E0, E0],
             [P1, P1, P2, P2, P2, E0, E0],
         ]
-        self.assertEqual(
-            self.game.get_winner(),
-            P2,
-            "Player 1 should be the winner diagonally left.",
-        )
+        assert (
+            self.game.get_winner() == P2
+        ), "Player 2 should be the winner diagonally left."
 
     def test_no_diagonal_winner_l(self):
         self.game.board = [
@@ -254,35 +232,24 @@ class TestGame(unittest.TestCase):
             [P2, P2, P1, P2, P1, E0, E0],
             [P1, P1, P2, P2, P2, E0, E0],
         ]
-        self.assertEqual(self.game.get_winner(), None, "No winner diagonally left.")
+        assert self.game.get_winner() is None, "No winner diagonally left."
 
     def test_undo_move(self):
         self.game = Game([P1, P2])
-        # Make some moves
         self.game.drop_piece(0, P1)  # Player 1
         self.game.drop_piece(1, P2)  # Player 2
 
         # Undo the last move (Player 2's move)
         self.game.undo_move()
-        self.assertEqual(
-            self.game.board[5][1],
-            E0,
-            "Last move should be undone (cell should be empty).",
-        )
+        assert (
+            self.game.board[5][1] == E0
+        ), "Last move should be undone (cell should be empty)."
 
         # Check if the second last move (Player 1's move) is still there
-        self.assertEqual(
-            self.game.board[5][0], P1, "Second last move should still be present."
-        )
+        assert self.game.board[5][0] == P1, "Second last move should still be present."
 
         # Undo the second last move (Player 1's move)
         self.game.undo_move()
-        self.assertEqual(
-            self.game.board[5][0],
-            E0,
-            "Second last move should be undone (cell should be empty).",
-        )
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert (
+            self.game.board[5][0] == E0
+        ), "Second last move should be undone (cell should be empty)."
