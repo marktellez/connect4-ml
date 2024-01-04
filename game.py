@@ -1,12 +1,7 @@
 import random
 
 from constants import E0
-from board import (
-    find_horizontal_win,
-    find_vertical_win,
-    find_diagonal_left_win,
-    find_diagonal_right_win,
-)
+from board import Board
 
 
 class Game:
@@ -70,12 +65,17 @@ class Game:
 
     def get_winner(self):
         for check_method in [
-            find_horizontal_win,
-            find_vertical_win,
-            find_diagonal_right_win,
-            find_diagonal_left_win,
+            Board.find_horizontal_win,
+            Board.find_vertical_win,
+            Board.find_diagonal_right_win,
+            Board.find_diagonal_left_win,
         ]:
-            winner = check_method(self.board)
-            if winner:
-                return winner
+            winning_sequence = check_method(self.board)
+            if winning_sequence:
+                # Check if all cells in the sequence match the same player token
+                first_token = self.board[winning_sequence[0][0]][winning_sequence[0][1]]
+                if all(
+                    self.board[row][col] == first_token for row, col in winning_sequence
+                ):
+                    return first_token  # Return the winning player's token
         return None
