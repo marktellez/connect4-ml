@@ -1,4 +1,6 @@
 __pycache__
 .pytest_cache
 venv
-game_states/*
+game_states/*.json
+graphs/*.png
+models/*.pth
