@@ -16,7 +16,7 @@ from src.model.dataset import Connect4Dataset
 def plot_learning_curves(
     train_losses, validation_losses, accuracies, learning_rates, filename
 ):
-    fig, (ax1, ax2) = plt.subplots(
+    _, (ax1, ax2) = plt.subplots(
         1, 2, figsize=(16, 6)
     )  # Create two side-by-side subplots
 
@@ -58,6 +58,7 @@ def plot_learning_curves(
 
 
 # Load Dataset and DataLoader
+print(f"Loading dataset")
 train_dataset = Connect4Dataset(directory="./game_states", split="train")
 validation_dataset = Connect4Dataset(directory="./game_states", split="validation")
 
@@ -69,7 +70,7 @@ num_game_state_fc_sizes = [4, 8, 16, 32, 64]
 
 batch_sizes = [16, 32, 64, 128]
 learning_rates = [0.001, 0.005, 0.0001]
-num_epochs = 100
+num_epochs = 50
 
 parameter_combinations = product(
     batch_sizes,
@@ -88,7 +89,7 @@ for (
     num_player_fc_size,
     num_game_state_fc_size,
 ) in parameter_combinations:
-    model_filename = f"connect4_model_{batch_size}_{learning_rate}_{num_conv_filters_size}_{num_fc_features_size}_{num_player_fc_size}.pth"
+    model_filename = f"connect4_model_{batch_size}_{learning_rate}_{num_conv_filters_size}_{num_fc_features_size}_{num_player_fc_size}_{num_game_state_fc_size}.pth"
 
     if os.path.exists(f"./models/{model_filename}"):
         print(f"Skipping training for parameters that match model: {model_filename}")
@@ -118,8 +119,19 @@ for (
     no_improvement_count = 0
     best_validation_accuracy = 0.0
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    validation_loader = DataLoader(validation_dataset, batch_size=batch_size)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=4,
+        pin_memory=True,
+    )
+    validation_loader = DataLoader(
+        validation_dataset, batch_size=batch_size, num_workers=4, pin_memory=True
+    )
+
+    train_loader_len = len(train_loader)
+    validation_loader_len = len(validation_loader)
 
     print(f"Number of training examples: {len(train_dataset)}")
     print(f"Number of validation examples: {len(validation_dataset)}")
@@ -186,8 +198,8 @@ for (
 
         lr_scheduler.step()
         # Calculate and print the average loss for this epoch
-        average_train_loss = total_loss / len(train_loader)
-        average_validation_loss = validation_loss / len(validation_loader)
+        average_train_loss = total_loss / train_loader_len
+        average_validation_loss = validation_loss / validation_loader_len
 
         accuracy = correct_predictions / total_predictions
         accuracies.append(accuracy)
@@ -223,7 +235,7 @@ for (
             validation_losses,
             accuracies,
             learning_rates,
-            f"learning_curves_{batch_size}_{learning_rate}_{num_conv_filters_size}_{num_fc_features_size}_{num_player_fc_size}.png",
+            f"learning_curves_{batch_size}_{learning_rate}_{num_conv_filters_size}_{num_fc_features_size}_{num_player_fc_size}_{num_game_state_fc_size}.png",
         )
 
 
