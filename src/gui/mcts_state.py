@@ -1,7 +1,7 @@
 import copy
 
-from game.board import Board
-from constants import P1, P2, E0
+from src.game.board import Board
+from src.constants import P1, P2, E0
 
 
 class MCTS4State:

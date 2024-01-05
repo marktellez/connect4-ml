@@ -1,6 +1,6 @@
 import pygame
 
-from gui.player import Player
+from src.gui.player import Player
 
 
 class HumanPlayer(Player):

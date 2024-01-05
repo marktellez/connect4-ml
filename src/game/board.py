@@ -1,5 +1,5 @@
 import copy
-from constants import P1, P2, E0
+from src.constants import P1, P2, E0
 
 
 class Board:

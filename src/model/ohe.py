@@ -1,4 +1,4 @@
-from constants import P1, P2
+from src.constants import P1, P2
 
 
 def move_to_ohe(column_index):

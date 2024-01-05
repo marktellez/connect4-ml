@@ -6,16 +6,16 @@ import pygame
 import os
 import time
 
-from game.game import Game
-from constants import P1, P2, E0
-from model.ohe import move_to_ohe, winner_to_ohe
+from src.game.game import Game
+from src.constants import P1, P2, E0
+from src.model.ohe import move_to_ohe, winner_to_ohe
 
 
-from gui.board import GUIBoard
-from bot import BotPlayer
-from gui.human import HumanPlayer
-from gui.agent import AgentPlayer
-from model.connect4 import Connect4Model
+from src.gui.board import GUIBoard
+from src.gui.bot import BotPlayer
+from src.gui.human import HumanPlayer
+from src.gui.agent import AgentPlayer
+from src.model.connect4 import Connect4Model
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -169,7 +169,7 @@ class GUI:
             print("Game has been closed.")
 
     def save_game_state(self):
-        save_dir = "game_states"
+        save_dir = "../game_states"
         os.makedirs(save_dir, exist_ok=True)
         existing_files = [f for f in os.listdir(save_dir) if f.endswith(".json")]
         if existing_files:

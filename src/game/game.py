@@ -1,7 +1,7 @@
 import random
 
-from constants import E0
-from game.board import Board
+from src.constants import E0
+from src.game.board import Board
 
 
 class Game:

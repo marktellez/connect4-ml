@@ -1,18 +1,25 @@
 import torch
 import torch.nn as nn
 
-from debug import dprint
+from src.debug import dprint
 
 
 class Connect4Model(nn.Module):
-    def __init__(self, board_shape=(6, 7, 3), num_players=3, num_outcomes=7):
+    def __init__(
+        self,
+        board_shape=(6, 7, 3),
+        num_players=3,
+        num_outcomes=7,
+        num_game_states=4,
+        num_conv_filters=32,
+        num_fc_features=64,
+        num_player_fc=32,
+        num_game_state_fc=32,
+    ):
         super(Connect4Model, self).__init__()
         dprint(f"board_shape {board_shape}")
 
         in_channels = board_shape[0]
-        num_conv_filters = 32
-        num_fc_features = 64
-        num_player_fc = 32
 
         # Convolutional layers for processing the board state
         self.board_conv = nn.Sequential(
@@ -33,14 +40,21 @@ class Connect4Model(nn.Module):
         # Fully connected layers for processing the current player
         self.player_fc = nn.Sequential(nn.Linear(num_players, num_player_fc), nn.ReLU())
 
+        # Fully connected layers for processing the game_state
+        self.game_state_fc = nn.Sequential(
+            nn.Linear(num_game_states, num_game_state_fc), nn.ReLU()
+        )
+
         # Output fully connected layers
         self.fc = nn.Sequential(
-            nn.Linear(num_fc_features + num_player_fc, num_fc_features),
+            nn.Linear(
+                num_fc_features + num_player_fc + num_game_state_fc, num_fc_features
+            ),
             nn.ReLU(),
             nn.Linear(num_fc_features, num_outcomes),
         )
 
-    def forward(self, board, current_player):
+    def forward(self, board, current_player, game_state):
         dprint(f"Input board shape: {board.shape}")
         dprint(f"current_player {current_player.shape}")
 
@@ -58,8 +72,14 @@ class Connect4Model(nn.Module):
         player_features = self.player_fc(current_player)
         dprint(f"Player features shape: {player_features.shape}")
 
+        # Pass the game state through fully connected layers
+        game_state_features = self.game_state_fc(game_state)
+        dprint(f"Game state features shape: {game_state_features.shape}")
+
         # Combine the board features with the player features
-        combined_features = torch.cat((board_features, player_features), dim=1)
+        combined_features = torch.cat(
+            (board_features, player_features, game_state_features), dim=1
+        )
         dprint(f"Combined features shape: {combined_features.shape}")
 
         # Get the final output from the last fully connected layers

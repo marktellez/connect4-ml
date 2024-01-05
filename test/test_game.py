@@ -1,6 +1,6 @@
 import init
-from game.game import Game
-from constants import P1, P2, E0
+from src.game.game import Game
+from src.constants import P1, P2, E0
 
 
 class TestGame:

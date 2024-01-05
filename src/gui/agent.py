@@ -2,18 +2,23 @@ import numpy as np
 import torch
 from torchvision import transforms
 
-from model.connect4 import Connect4Model
-from player import Player
-from constants import P1, P2
+from src.model.connect4 import Connect4Model
+from src.gui.player import Player
+from src.constants import P1, P2
 
-from model.ohe import winner_to_ohe
+from src.model.ohe import winner_to_ohe
 
 
 class AgentPlayer(Player):
     def __init__(self, player_token, model_path):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = Connect4Model(
-            board_shape=(6, 7, 3), num_players=3, num_outcomes=7
+            board_shape=(6, 7, 3),
+            num_players=3,
+            num_outcomes=7,
+            num_conv_filters=16,
+            num_fc_features=16,
+            num_player_fc=16,
         ).to(self.device)
         self.model.load_state_dict(torch.load(model_path))
         self.model.eval()

@@ -1,5 +1,5 @@
 import pygame
-from constants import P1, P2
+from src.constants import P1, P2
 
 
 class GUIBoard:

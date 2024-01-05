@@ -1,2 +1,7 @@
 pytest
 torch
+pygame
+numpy
+torchvision
+matplotlib
+ 

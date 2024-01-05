@@ -2,8 +2,8 @@ import random
 import math
 import copy
 
-from gui.mcts_state import MCTS4State
-from gui.player import Player
+from src.gui.mcts_state import MCTS4State
+from src.gui.player import Player
 
 
 class MCTSNode:
