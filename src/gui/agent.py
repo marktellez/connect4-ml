@@ -6,11 +6,15 @@ from model.connect4 import Connect4Model
 from player import Player
 from constants import P1, P2
 
+from model.ohe import winner_to_ohe
+
 
 class AgentPlayer(Player):
     def __init__(self, player_token, model_path):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = Connect4Model().to(self.device)
+        self.model = Connect4Model(
+            board_shape=(6, 7, 3), num_players=3, num_outcomes=7
+        ).to(self.device)
         self.model.load_state_dict(torch.load(model_path))
         self.model.eval()
         self.player_token = player_token
@@ -22,6 +26,7 @@ class AgentPlayer(Player):
         self.game = game
 
     def move(self, board):
+        print(f"board {board}")
         board_state = torch.tensor(
             board, dtype=torch.float, device=self.device
         ).unsqueeze(0)
@@ -30,25 +35,22 @@ class AgentPlayer(Player):
             dtype=torch.float,
             device=self.device,
         ).unsqueeze(0)
-        best_move = torch.tensor(
-            [0, 0, 0, 0, 0, 0, 0], dtype=torch.float, device=self.device
-        )
+
+        winner = torch.tensor(
+            winner_to_ohe(self.game.get_winner()), dtype=torch.float, device=self.device
+        ).unsqueeze(0)
 
         print(f"board_state {board_state.shape}")
         print(f"current_player {current_player.shape}")
-        print(f"best_move {best_move.shape}")
+
+        print(f"winner {winner.shape}")
 
         # Pass tensors to the model
-        move_logits, policy_output = self.model(
-            board_state,
-            current_player,
-            best_move,
-        )
+        predictions = self.model(board_state, current_player)
 
-        print(f"move_logits {move_logits}")
-        print(f"policy_output {policy_output}")
+        print(f"predictions {predictions}")
 
-        predictions_cpu = policy_output.detach().cpu().numpy()
+        predictions_cpu = predictions.detach().cpu().numpy()
         predicted_move = np.argmax(predictions_cpu[0])
 
         return predicted_move

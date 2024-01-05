@@ -8,13 +8,17 @@ from torch.utils.data import Dataset
 class Connect4Dataset(Dataset):
     def __init__(self, directory, split="train", split_ratio=0.8):
         self.data = []
-        for filename in os.listdir(directory):
+        data_files = os.listdir(directory)
+        random.seed(42)  # Fix the seed for reproducibility
+        random.shuffle(data_files)  # Shuffle file names, not the data itself
+
+        for filename in data_files:
             if filename.endswith(".json"):
-                with open(os.path.join(directory, filename), "r") as file:
+                filepath = os.path.join(directory, filename)
+                with open(filepath, "r") as file:
                     game_data = json.load(file)
                     self.data.extend(game_data)
 
-        random.shuffle(self.data)
         split_index = int(len(self.data) * split_ratio)
         if split == "train":
             self.data = self.data[:split_index]

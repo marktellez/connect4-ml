@@ -143,9 +143,6 @@ class GUI:
                         if args.bot_vs_bot and args.sleep:
                             time.sleep(1)
 
-                        self.game.drop_piece(
-                            move_made, self.game.current_player.player_token
-                        )
                         board_state_copy = copy.deepcopy(self.game.board)
 
                         self.game_states.append(
@@ -157,6 +154,10 @@ class GUI:
                                     self.game.get_winner(), self.game.is_draw()
                                 ),
                             }
+                        )
+
+                        self.game.drop_piece(
+                            move_made, self.game.current_player.player_token
                         )
 
                 self.update_display()
