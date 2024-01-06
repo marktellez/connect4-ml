@@ -1,3 +1,4 @@
+import glob
 import os
 import torch
 import torch.nn as nn
@@ -10,6 +11,10 @@ from itertools import product
 
 from src.model.connect4 import Connect4Model
 from src.model.dataset import Connect4Dataset
+
+from src.debug import set_seed
+
+set_seed()
 
 
 # Define a function for plotting the learning curves side by side
@@ -63,14 +68,14 @@ train_dataset = Connect4Dataset(directory="./game_states", split="train")
 validation_dataset = Connect4Dataset(directory="./game_states", split="validation")
 
 
-num_conv_filters_sizes = [4, 8, 16, 32, 64]
-num_fc_features_sizes = [4, 8, 16, 32, 64]
-num_player_fc_sizes = [4, 8, 16, 32, 64]
-num_game_state_fc_sizes = [4, 8, 16, 32, 64]
+num_conv_filters_sizes = [32, 64, 128]
+num_fc_features_sizes = [32, 128, 512]
+num_player_fc_sizes = [16, 64]
+num_game_state_fc_sizes = [16, 64]
 
-batch_sizes = [16, 32, 64, 128]
+batch_sizes = [256, 64, 16]
 learning_rates = [0.001, 0.005, 0.0001]
-num_epochs = 50
+num_epochs = 100
 
 parameter_combinations = product(
     batch_sizes,
@@ -114,7 +119,7 @@ for (
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=1e-6)
 
-    patience = 10
+    patience = 6
     best_validation_loss = float("inf")
     no_improvement_count = 0
     best_validation_accuracy = 0.0
@@ -237,6 +242,10 @@ for (
             learning_rates,
             f"learning_curves_{batch_size}_{learning_rate}_{num_conv_filters_size}_{num_fc_features_size}_{num_player_fc_size}_{num_game_state_fc_size}.png",
         )
+
+        if epoch == num_epochs:
+            best_model_filename = f"{'.'.join(model_filename.split('.')[:-1])}_BEST.pth"
+            torch.save(model.state_dict(), f"./models/{best_model_filename}")
 
 
 def final_evaluation(model, validation_loader):

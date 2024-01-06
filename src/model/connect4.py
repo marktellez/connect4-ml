@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 
-from src.debug import dprint
+from src.debug import dprint, set_seed
+
+set_seed()
 
 
 class Connect4Model(nn.Module):
