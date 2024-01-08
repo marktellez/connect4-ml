@@ -34,6 +34,7 @@ class Connect4Dataset(Dataset):
             self.data[idx]["current_player"], dtype=torch.float
         )
         best_move = torch.tensor(self.data[idx]["best_move"], dtype=torch.float)
-        winner = torch.tensor(self.data[idx]["winner"], dtype=torch.float)
+        game_state = torch.tensor(self.data[idx]["game_state"], dtype=torch.float)
+        valid_moves = torch.tensor(self.data[idx]["valid_moves"], dtype=torch.float)
 
-        return board_state, current_player, best_move, winner
+        return board_state, current_player, best_move, game_state, valid_moves

@@ -4,4 +4,4 @@ pygame
 numpy
 torchvision
 matplotlib
- 
+tqdm

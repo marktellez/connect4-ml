@@ -5,6 +5,8 @@ import copy
 from src.gui.mcts_state import MCTS4State
 from src.gui.player import Player
 
+from src.debug import dprint
+
 
 class MCTSNode:
     def __init__(self, state, parent=None):
@@ -19,31 +21,31 @@ class MCTSNode:
         return len(self.untried_moves) == 0
 
 
-class BotPlayer(Player):
+class MCTSBotPlayer(Player):
     def __init__(self, player_token):
         super().__init__(player_token)
         self.iterations = random.randint(100, 2000)
         self.exploration_weight = random.uniform(0.5, 2.0)
 
     def set_game(self, game):
-        print(f"Setting game")
+        dprint(f"Setting game")
         self.game = game
 
     def move(self, board):
         root_state = MCTS4State(self.game)
         root_node = MCTSNode(root_state)
-        print(f"root_state {root_state} root_node {root_node}")
+        dprint(f"root_state {root_state} root_node {root_node}")
 
         for _ in range(self.iterations):
-            print(f"iterating")
+            dprint(f"iterating")
             node = self.select_node(root_node)
             winner = self.simulate(node.state)
-            print(f"winner {winner} node {node}")
+            dprint(f"winner {winner} node {node}")
             self.backpropagate(node, winner)
 
-        print("finding best move")
+        dprint("finding best move")
         best_move = self.best_move(root_node)
-        print(f"best_move {best_move}")
+        dprint(f"best_move {best_move}")
         return best_move
 
     def select_node(self, node):
@@ -64,17 +66,17 @@ class BotPlayer(Player):
 
     def simulate(self, state):
         while not state.is_game_over():
-            print("not game over")
+            dprint("not game over")
             possible_moves = state.get_valid_moves()
-            print(f"possible_moves {possible_moves}")
+            dprint(f"possible_moves {possible_moves}")
 
-            print(f"before move board {state.board}")
+            dprint(f"before move board {state.board}")
             move = random.choice(possible_moves)
-            print(f"move {move}")
+            dprint(f"move {move}")
             if not state.make_move(move):
                 raise Exception("No move registered!")
 
-            print(f"after move board {state.board}")
+            dprint(f"after move board {state.board}")
         return state.get_winner()
 
     def backpropagate(self, node, winner):
@@ -97,8 +99,8 @@ class BotPlayer(Player):
         return best_node
 
     def best_move(self, node):
-        print(f"node {node}")
-        print(f"node.children {node.children}")
+        dprint(f"node {node}")
+        dprint(f"node.children {node.children}")
 
         best_visits = max(child.visits for child in node.children)
         best_children = [

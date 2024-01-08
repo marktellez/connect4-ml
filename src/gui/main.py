@@ -1,3 +1,5 @@
+import sys
+from tqdm import tqdm
 import copy
 import json
 import argparse
@@ -8,14 +10,18 @@ import time
 
 from src.game.game import Game
 from src.constants import P1, P2, E0
-from src.model.ohe import move_to_ohe, winner_to_ohe
+from src.model.ohe import move_to_ohe, winner_to_ohe, valid_moves_to_ohe
 
 
 from src.gui.board import GUIBoard
-from src.gui.bot import BotPlayer
+from src.gui.bot_1 import MCTSBotPlayer
+from src.gui.bot_2 import ProcBotPlayer
 from src.gui.human import HumanPlayer
 from src.gui.agent import AgentPlayer
 from src.model.connect4 import Connect4Model
+from src.game.board import Board
+
+from src.debug import dprint
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -38,15 +44,22 @@ def load_model_from_path(model_path):
 
 
 class GUI:
-    def __init__(self, model_path=None, bot_vs_bot=False, num_games=1):
+    def __init__(
+        self,
+        model_path=None,
+        bot_vs_bot=False,
+        bot_vs_agent=False,
+        human_vs_agent=False,
+        agent_vs_agent=False,
+        no_gui=False,
+        num_games=1,
+    ):
         print(f"bot_vs_bot {bot_vs_bot}")
+        print(f"bot_vs_agent {bot_vs_agent}")
         pygame.init()
 
         self.WIDTH, self.HEIGHT = 700, 600
         self.SQUARE_SIZE = self.WIDTH // 7
-
-        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
-        pygame.display.set_caption("Connect Four")
 
         self.board_ui = GUIBoard(self.WIDTH, self.HEIGHT, self.SQUARE_SIZE)
 
@@ -58,35 +71,71 @@ class GUI:
 
         self.total_games = 0
         self.predicted_winner = None
+        self.bot_vs_agent = bot_vs_agent
+        self.bot_vs_bot = bot_vs_bot
+        self.human_vs_agent = human_vs_agent
+        self.agent_vs_agent = agent_vs_agent
+        self.model_path = model_path
+        self.no_gui = no_gui
+
+        if not self.no_gui:
+            self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+            pygame.display.set_caption("Connect Four")
+
+        self.progress_bar = tqdm(
+            total=self.num_games, disable=not self.no_gui, desc="Simulating games"
+        )
+
+        self.games_written = 0
 
     def update_display(self):
-        self.board_ui.draw(self.game.board, self.screen)
-        pygame.display.update()
+        if not self.no_gui:
+            self.board_ui.draw(self.game.board, self.screen)
+            pygame.display.update()
 
     def reset(self):
         if args.bot_vs_bot:
-            print(f"Bot vs Bot")
-            self.player_1 = BotPlayer(P1)
-            self.player_2 = BotPlayer(P2)
-        elif args.model_path != None:
-            print(f"Agent vs Human")
+            dprint(f"Bot vs Bot")
+            self.player_1 = MCTSBotPlayer(P1)
+            self.player_2 = ProcBotPlayer(P2)
+
+        elif self.model_path is not None and self.bot_vs_agent:
+            dprint(f"Bot vs Agent")
+            self.player_1 = MCTSBotPlayer(P1)
+            self.player_2 = AgentPlayer(P2, self.model_path)
+
+        elif self.model_path is not None and self.human_vs_agent:
+            dprint(f"Human vs Agent")
             self.player_1 = HumanPlayer(P1, self.SQUARE_SIZE)
-            self.player_2 = AgentPlayer(P2, args.model_path)
+            self.player_2 = AgentPlayer(P2, self.model_path)
+
+        elif self.model_path is not None and self.agent_vs_agent:
+            dprint(f"Agent vs Agent")
+            self.player_1 = AgentPlayer(P1, self.model_path)
+            self.player_2 = AgentPlayer(P2, self.model_path)
+
         else:
-            print(f"Bot vs Human")
+            print(f"Human vs Bot")
             self.player_1 = HumanPlayer(P1, self.SQUARE_SIZE)
-            self.player_2 = BotPlayer(P2)
+            self.player_2 = MCTSBotPlayer(P2)
 
         self.game = Game([self.player_1, self.player_2])
 
-        if self.player_2.__class__ == AgentPlayer:
-            self.player_2.set_game(self.game)
-
-        if self.player_1.__class__ == BotPlayer:
+        if (
+            self.player_1.__class__ == AgentPlayer
+            or self.player_1.__class__ == MCTSBotPlayer
+            or self.player_1.__class__ == ProcBotPlayer
+        ):
             self.player_1.set_game(self.game)
 
-        if self.player_2.__class__ == BotPlayer:
+        if (
+            self.player_2.__class__ == AgentPlayer
+            or self.player_2.__class__ == MCTSBotPlayer
+            or self.player_2.__class__ == ProcBotPlayer
+        ):
             self.player_2.set_game(self.game)
+
+        self.games_written = 0
 
     def run(self):
         run = True
@@ -97,7 +146,7 @@ class GUI:
             while run:
                 self.update_display()
                 if games_simulated >= self.num_games:
-                    continue
+                    break
 
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -105,15 +154,15 @@ class GUI:
 
                 if self.game.is_game_over():
                     winner = self.game.get_winner()
-                    print(f"Winner {winner}")
+                    dprint(f"Winner {winner}")
 
-                    if self.player_2.__class__ != AgentPlayer:
-                        self.save_game_state()
+                    self.save_game_state()
 
                     if self.winning_combo:
                         self.highlight_winning_combo()
 
                     games_simulated += 1
+
                     self.game = Game([self.player_1, self.player_2])
 
                     self.update_display()
@@ -136,40 +185,47 @@ class GUI:
                                     move_made = self.game.current_player.move(event.pos)
 
                     else:
-                        print(f"self.game.board {self.game.board}")
+                        dprint(f"self.game.board {self.game.board}")
                         move_made = self.game.current_player.move(self.game.board)
 
                     if move_made != None:
-                        if args.bot_vs_bot and args.sleep:
+                        if (self.bot_vs_bot or self.bot_vs_agent) and args.sleep:
                             time.sleep(1)
 
                         board_state_copy = copy.deepcopy(self.game.board)
-
-                        self.game_states.append(
-                            {
-                                "board_state": board_state_copy,
-                                "current_player": self.game.get_current_player().player_token,
-                                "best_move": move_to_ohe(move_made),
-                                "winner": winner_to_ohe(
-                                    self.game.get_winner(), self.game.is_draw()
-                                ),
-                            }
+                        current_player = self.game.get_current_player().player_token
+                        valid_moves = valid_moves_to_ohe(
+                            Board.get_valid_moves(board_state_copy)
                         )
 
                         self.game.drop_piece(
                             move_made, self.game.current_player.player_token
                         )
 
-                self.update_display()
+                        self.game_states.append(
+                            {
+                                "board_state": board_state_copy,
+                                "current_player": current_player,
+                                "best_move": move_to_ohe(move_made),
+                                "game_state": winner_to_ohe(
+                                    self.game.get_winner(), self.game.is_draw()
+                                ),
+                                "valid_moves": valid_moves,
+                            }
+                        )
+
+            sys.stdout.flush()
+            self.update_display()
 
         except KeyboardInterrupt:
             print("Game interrupted.")
         finally:
             pygame.quit()
+            self.progress_bar.close()
             print("Game has been closed.")
 
     def save_game_state(self):
-        save_dir = "../game_states"
+        save_dir = "./game_states"
         os.makedirs(save_dir, exist_ok=True)
         existing_files = [f for f in os.listdir(save_dir) if f.endswith(".json")]
         if existing_files:
@@ -183,8 +239,10 @@ class GUI:
 
         with open(filename, "w") as file:
             json.dump(self.game_states, file, indent=2)
-        print(f"Saved game {next_game_number} to {filename}")
+        dprint(f"Saved game {next_game_number} to {filename}")
 
+        self.games_written += 1
+        self.progress_bar.update(self.games_written)
         self.game_states = []
 
     def get_empty_board(self):
@@ -267,9 +325,7 @@ class GUI:
         return highlight_positions
 
     def reset_game(self):
-        self.frame_stack.reset()
         self.game.reset_board()
-        self.board_ui.load_state(self.frame_stack.get_current_frame())
         self.player = P1
         self.winning_combo = []
         self.agent.games_played += 1
@@ -290,10 +346,46 @@ if __name__ == "__main__":
         required=False,
         default=False,
     )
+    parser.add_argument(
+        "--human_vs_bot",
+        help="Play human vs bot",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    parser.add_argument(
+        "--bot_vs_agent",
+        help="Play bot vs agent",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    parser.add_argument(
+        "--human_vs_agent",
+        help="Play human vs agent",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    parser.add_argument(
+        "--agent_vs_agent",
+        help="Play agent vs agent",
+        action="store_true",
+        required=False,
+        default=False,
+    )
 
     parser.add_argument(
         "--sleep",
         help="Pause bot play for verification",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+
+    parser.add_argument(
+        "--no_gui",
+        help="Hide gui",
         action="store_true",
         required=False,
         default=False,
@@ -304,6 +396,10 @@ if __name__ == "__main__":
     gui = GUI(
         model_path=args.model_path,
         bot_vs_bot=args.bot_vs_bot,
+        bot_vs_agent=args.bot_vs_agent,
+        human_vs_agent=args.human_vs_agent,
+        agent_vs_agent=args.agent_vs_agent,
+        no_gui=args.no_gui,
         num_games=1 if args.num_games == None else args.num_games,
     )
     gui.run()

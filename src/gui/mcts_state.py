@@ -21,7 +21,7 @@ class MCTS4State:
     def make_move(self, column):
         # Places a disc in the specified column
         old_board = copy.deepcopy(self.board)
-        print(f"old_board {old_board}")
+
         for row in reversed(range(self.rows)):
             if self.board[row][column] == E0:  # Check if the slot is empty
                 self.board[row][column] = self.current_player

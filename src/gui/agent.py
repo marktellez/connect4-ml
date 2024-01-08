@@ -6,8 +6,11 @@ from torchvision import transforms
 from src.model.connect4 import Connect4Model
 from src.gui.player import Player
 from src.constants import P1, P2
+from src.game.board import Board
 
-from src.model.ohe import winner_to_ohe
+from src.model.ohe import winner_to_ohe, valid_moves_to_ohe
+
+from src.debug import dprint
 
 
 class AgentPlayer(Player):
@@ -40,7 +43,8 @@ class AgentPlayer(Player):
         self.board_history = []
 
     def parse_model_filename(self, model_path):
-        pattern = r"connect4_model_(\d+)_(\d+\.\d+)_(\d+)_(\d+)_(\d+)_(\d+)\.pth"
+        # Updated pattern to include exponential notation for the learning rate
+        pattern = r"connect4_model_(\d+)_([0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)_(\d+)_(\d+)_(\d+)_(\d+).*\.pth"
         match = re.search(pattern, model_path)
         if match:
             batch_size = int(match.group(1))
@@ -64,31 +68,39 @@ class AgentPlayer(Player):
         self.game = game
 
     def move(self, board):
-        print(f"board {board}")
+        dprint(f"board {board}")
         board_state = torch.tensor(
             board, dtype=torch.float, device=self.device
         ).unsqueeze(0)
+
         current_player = torch.tensor(
             self.player_token,
             dtype=torch.float,
             device=self.device,
         ).unsqueeze(0)
 
-        winner = torch.tensor(
+        game_state = torch.tensor(
             winner_to_ohe(self.game.get_winner()), dtype=torch.float, device=self.device
         ).unsqueeze(0)
 
-        print(f"board_state {board_state.shape}")
-        print(f"current_player {current_player.shape}")
+        valid_moves = torch.tensor(
+            valid_moves_to_ohe(Board.get_valid_moves(self.game.board)),
+            dtype=torch.float,
+            device=self.device,
+        ).unsqueeze(0)
 
-        print(f"winner {winner.shape}")
+        dprint(f"board_state {board_state.shape}")
+        dprint(f"current_player {current_player.shape}")
+
+        dprint(f"game_state {game_state.shape}")
 
         # Pass tensors to the model
-        predictions = self.model(board_state, current_player)
+        predictions = self.model(board_state, current_player, game_state, valid_moves)
 
-        print(f"predictions {predictions}")
+        dprint(f"predictions {predictions}")
 
         predictions_cpu = predictions.detach().cpu().numpy()
+        print(f"predictions_cpu {predictions_cpu}")
         predicted_move = np.argmax(predictions_cpu[0])
 
         return predicted_move
